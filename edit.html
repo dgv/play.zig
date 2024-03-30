@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>go-vim</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="/static/jquery.min.js"></script>
+    <script src="/static/playground.js"></script>
+    <link rel=icon href=/static/favicon.png>
+    <link rel=icon href=/static/favicon.svg>
+    <link rel="stylesheet" href="/static/codemirror/lib/codemirror.css" />
+    <script src="/static/codemirror/lib/codemirror.min.js"></script>
+    <script src="/static/codemirror/mode/zig/zig.js"></script>
+    <link rel="stylesheet" href="/static/codemirror/theme/monokai.css" />
+    <script src="/static/codemirror/addon/dialog/dialog.js"></script>
+    <script src="/static/codemirror/addon/search/searchcursor.js"></script>
+    <script src="/static/codemirror/addon/edit/matchbrackets.js"></script>
+    <link rel="stylesheet" href="/static/codemirror/addon/dialog/dialog.css" />
+    <script>
+        $(document).ready(function () {
+            code = CodeMirror.fromTextArea(document.getElementById("code"), {
+                theme: "monokai",
+                matchBrackets: true,
+                indentUnit: 4,
+                tabSize: 4,
+                indentWithTabs: false,
+                lineWrapping: true,
+                mode: "text/x-zig",
+                lineNumbers: true,
+                showCursorWhenSelecting: true,
+            });
+            $code = $(code.getWrapperElement()).attr("id", "code");
+            code.refresh();
+            playground({
+                outputEl: "#output",
+                runEl: "#run",
+                fmtEl: "#fmt",
+                fmtImportEl: "#imports",
+                shareEl: "#share",
+                shareURLEl: "#shareURL",
+                enableHistory: true,
+            });
+
+            $("#code").attr("wrap", "off");
+            var about = $("#about");
+            var wrap = $("#wrap");
+            about.click(function (e) {
+                if ($(e.target).is("a")) {
+                    return;
+                }
+                about.hide();
+                wrap.show();
+            });
+            $("#aboutButton").click(function () {
+                if (about.is(":visible")) {
+                    about.hide();
+                    wrap.show();
+                    return;
+                }
+                wrap.hide();
+                about.show();
+            });
+
+            if (window.trackEvent) {
+                $("#run").click(function () {
+                    window.trackEvent("playground", "click", "run-button");
+                });
+                $("#share").click(function () {
+                    window.trackEvent("playground", "click", "share-button");
+                });
+            }
+        });
+
+        function createCookie(name, value) {
+            document.cookie = name + "=" + value + "; path=/";
+        }
+
+        function readCookie(name) {
+            var nameEQ = name + "=";
+            var ca = document.cookie.split(";");
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == " ") c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0)
+                    return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+    </script>
+</head>
+
+<body itemscope itemtype="http://schema.org/CreativeWork">
+    <div id="banner">
+        <div id="head" itemprop="name">Zig Playground</div>
+        <div id="controls">
+            <input type="button" value="Run" id="run" />
+            <input type="button" value="Format" id="fmt" />
+            <input type="button" value="Share" id="share" />
+            <input type="text" id="shareURL" />
+        </div>
+        <!-- <div id="aboutControls">
+        <input type="button" value="About" id="aboutButton" />
+      </div> -->
+    </div>
+    <div id="wrap">
+        <textarea id="code" name="code" spellcheck="false">{{printf "%s" .Snippet.Body |html}}</textarea>
+    </div>
+    <div id="output"></div>
+</body>
+
+</html>
