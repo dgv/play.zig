@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
 	//"cloud.google.com/go/datastore"
 	//"google.golang.org/appengine/log"
 )
@@ -63,13 +62,13 @@ func share(w http.ResponseWriter, r *http.Request) {
 	snip := &Snippet{Body: body.Bytes()}
 	id := snip.Id()
 	/*
-	key := datastore.NameKey("Snippet", id, nil)
-	_, err = datastoreClient.Put(r.Context(), key, snip)
-	if err != nil {
-		log.Errorf(r.Context(), "putting Snippet: %v", err)
-		http.Error(w, "Server Error", http.StatusInternalServerError)
-		return
-	}
+		key := datastore.NameKey("Snippet", id, nil)
+		_, err = datastoreClient.Put(r.Context(), key, snip)
+		if err != nil {
+			log.Errorf(r.Context(), "putting Snippet: %v", err)
+			http.Error(w, "Server Error", http.StatusInternalServerError)
+			return
+		}
 	*/
 	fmt.Fprint(w, id)
 }

@@ -5,19 +5,47 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
+	"encoding/json"
+	"io"
+	"io/ioutil"
+	"log"
 	"net/http"
-)
+	"net/url"
 
-const fmtUrl = "http://localhost:8077/fmt"
+	"os/exec"
+)
 
 func init() {
 	http.HandleFunc("/fmt", fmtHandler)
 }
 
 func fmtHandler(w http.ResponseWriter, r *http.Request) {
-	if err := passThru(w, r, fmtUrl); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, "Fmt server error.")
+	if r.Method == "POST" {
+		body, _ := ioutil.ReadAll(r.Body)
+		out, err := zigFmt(body)
+		json.NewEncoder(w).Encode(Output{Error: err, Body: out})
 	}
+}
+
+func zigFmt(code []byte) (stdout string, stderr string) {
+	cmd := exec.Command("zig", "fmt", "--stdin")
+	var outb, errb bytes.Buffer
+	stdin, err := cmd.StdinPipe()
+	defer stdin.Close()
+	cmd.Stdout = &outb
+	cmd.Stderr = &errb
+	err = cmd.Start()
+	if err != nil {
+		log.Println(err.Error())
+	}
+	_c, _ := url.QueryUnescape(string(code))
+	io.WriteString(stdin, _c[5:])
+	stdin.Close()
+	cmd.Wait()
+	stderr = errb.String()
+	if errb.String() != "" {
+		stderr = errb.String()[8:]
+	}
+	return outb.String(), stderr
 }

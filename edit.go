@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 	"text/template"
-
 	//"cloud.google.com/go/datastore"
 	//"google.golang.org/appengine/log"
 )
@@ -35,29 +34,29 @@ func edit(w http.ResponseWriter, r *http.Request) {
 
 	snip := &Snippet{Body: []byte(hello)}
 	/*
-	if strings.HasPrefix(r.URL.Path, "/p/") {
-		ctx := context.Background()
-		id := r.URL.Path[3:]
-		serveText := false
-		if strings.HasSuffix(id, ".zig") {
-			id = id[:len(id)-3]
-			serveText = true
-		}
-		key := datastore.NameKey("Snippet", id, nil)
-		err := datastoreClient.Get(ctx, key, snip)
-		if err != nil {
-			if err != datastore.ErrNoSuchEntity {
-				log.Errorf(ctx, "loading Snippet: %v", err)
+		if strings.HasPrefix(r.URL.Path, "/p/") {
+			ctx := context.Background()
+			id := r.URL.Path[3:]
+			serveText := false
+			if strings.HasSuffix(id, ".zig") {
+				id = id[:len(id)-3]
+				serveText = true
 			}
-			http.Error(w, "Snippet not found", http.StatusNotFound)
-			return
+			key := datastore.NameKey("Snippet", id, nil)
+			err := datastoreClient.Get(ctx, key, snip)
+			if err != nil {
+				if err != datastore.ErrNoSuchEntity {
+					log.Errorf(ctx, "loading Snippet: %v", err)
+				}
+				http.Error(w, "Snippet not found", http.StatusNotFound)
+				return
+			}
+			if serveText {
+				w.Header().Set("Content-type", "text/plain")
+				w.Write(snip.Body)
+				return
+			}
 		}
-		if serveText {
-			w.Header().Set("Content-type", "text/plain")
-			w.Write(snip.Body)
-			return
-		}
-	}
 	*/
 	editTemplate.Execute(w, &editData{snip})
 }
