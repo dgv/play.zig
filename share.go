@@ -7,21 +7,22 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
-	//"cloud.google.com/go/datastore"
-	//"google.golang.org/appengine/log"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
-	salt           = "Go playground salt\n"
+	salt           = "Zig playground salt\n"
 	maxSnippetSize = 64 * 1024
 )
 
 type Snippet struct {
-	Body []byte `datastore:",noindex"`
+	Body []byte
 }
 
 func (s *Snippet) Id() string {
@@ -45,6 +46,29 @@ func init() {
 	http.HandleFunc("/share", share)
 }
 
+func (d *DB) initDB() (err error) {
+	d.DB, err = sql.Open("sqlite3", "file:snippets.db")
+	statement, err := d.Prepare("CREATE TABLE IF NOT EXISTS snippets (key TEXT PRIMARY KEY, value TEXT)")
+	statement.Exec()
+	return
+}
+
+func (d *DB) put(id string, code []byte) (err error) {
+	tx, err := d.Begin()
+	statement, err := tx.Prepare("INSERT INTO snippets (key, value) VALUES (?, ?)")
+	statement.Exec(id, string(code))
+	err = tx.Commit()
+	return
+}
+
+func (d *DB) get(id string) (code []byte, err error) {
+	row, err := d.Prepare("SELECT value FROM snippets WHERE key = ?")
+	defer row.Close()
+	var value string
+	err = row.QueryRow(id).Scan(&value)
+	return []byte(value), err
+}
+
 func share(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Forbidden", http.StatusForbidden)
@@ -61,6 +85,7 @@ func share(w http.ResponseWriter, r *http.Request) {
 	r.Body.Close()
 	snip := &Snippet{Body: body.Bytes()}
 	id := snip.Id()
+	db.put(id, body.Bytes())
 	/*
 		key := datastore.NameKey("Snippet", id, nil)
 		_, err = datastoreClient.Put(r.Context(), key, snip)

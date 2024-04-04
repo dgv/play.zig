@@ -1,21 +1,32 @@
 package main
 
 import (
-	//"context"
 	"net/http"
 	"os"
-	//"cloud.google.com/go/datastore"
+	"log"
+	"database/sql"
 )
 
-//var datastoreClient *datastore.Client
+type DB struct {
+	*sql.DB
+}
+var db DB
 
 func main() {
-	//ctx := context.Background()
-	//datastoreClient, _ = datastore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
+	err := db.initDB()
+	defer db.Close()
+	if err != nil {
+		log.Fatal("initdb:", err.Error())
+	}
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
+	fileHandler := http.FileServer(http.Dir("./static/"))
+	logger := func(rw http.ResponseWriter, r *http.Request) {
+		fileHandler.ServeHTTP(rw, r)
+	}
+	http.HandleFunc("/static/", logger)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		panic(err)
 	}

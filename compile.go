@@ -42,15 +42,14 @@ func compileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func zigRun(code []byte) (stdout string, stderr string) {
+	// create temporary zig code file
 	f, _ := os.CreateTemp("", "playzig-*.zig")
 	var outb, errb bytes.Buffer
-
 	defer f.Close()
 	defer os.Remove(f.Name())
-
 	_c, _ := url.QueryUnescape(string(code))
 	f.Write([]byte(_c[15:]))
-
+	// 5s timeout by default, use firejail if present limiting network/ram usage
 	cmd := exec.Command("timeout", "5s", "zig", "run", f.Name())
 	if _, err := exec.LookPath("firejail"); err == nil {
 		cmd = exec.Command("timeout", "5s", "firejail", "--net=none", "--rlimit-as=1024", "zig", "run", f.Name())

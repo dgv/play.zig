@@ -9,11 +9,12 @@ import (
 	"net/http"
 	"strings"
 	"text/template"
+	//"log"
 	//"cloud.google.com/go/datastore"
 	//"google.golang.org/appengine/log"
 )
 
-const hostname = "play.golang.org"
+const hostname = "zig.fly.dev"
 
 func init() {
 	http.HandleFunc("/", edit)
@@ -33,31 +34,28 @@ func edit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	snip := &Snippet{Body: []byte(hello)}
-	/*
+
 		if strings.HasPrefix(r.URL.Path, "/p/") {
-			ctx := context.Background()
 			id := r.URL.Path[3:]
 			serveText := false
 			if strings.HasSuffix(id, ".zig") {
 				id = id[:len(id)-3]
 				serveText = true
 			}
-			key := datastore.NameKey("Snippet", id, nil)
-			err := datastoreClient.Get(ctx, key, snip)
+			s, err := db.get(id)
+			snip= &Snippet{Body:s}
+			println(string(snip.Body))
 			if err != nil {
-				if err != datastore.ErrNoSuchEntity {
-					log.Errorf(ctx, "loading Snippet: %v", err)
-				}
 				http.Error(w, "Snippet not found", http.StatusNotFound)
 				return
 			}
 			if serveText {
 				w.Header().Set("Content-type", "text/plain")
-				w.Write(snip.Body)
+				w.Write(s)
 				return
 			}
 		}
-	*/
+
 	editTemplate.Execute(w, &editData{snip})
 }
 
@@ -65,6 +63,6 @@ const hello = `const std = @import("std");
 const builtin = @import("builtin");
 
 pub fn main() !void {
-    std.debug.print("Hello from Zig version: {}", .{builtin.zig_version});
+    std.debug.print("Hello from Zig {}", .{builtin.zig_version});
 }
 `
