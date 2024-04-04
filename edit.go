@@ -35,26 +35,26 @@ func edit(w http.ResponseWriter, r *http.Request) {
 
 	snip := &Snippet{Body: []byte(hello)}
 
-		if strings.HasPrefix(r.URL.Path, "/p/") {
-			id := r.URL.Path[3:]
-			serveText := false
-			if strings.HasSuffix(id, ".zig") {
-				id = id[:len(id)-3]
-				serveText = true
-			}
-			s, err := db.get(id)
-			snip= &Snippet{Body:s}
-			println(string(snip.Body))
-			if err != nil {
-				http.Error(w, "Snippet not found", http.StatusNotFound)
-				return
-			}
-			if serveText {
-				w.Header().Set("Content-type", "text/plain")
-				w.Write(s)
-				return
-			}
+	if strings.HasPrefix(r.URL.Path, "/p/") {
+		id := r.URL.Path[3:]
+		serveText := false
+		if strings.HasSuffix(id, ".zig") {
+			id = id[:len(id)-3]
+			serveText = true
 		}
+		s, err := db.get(id)
+		snip = &Snippet{Body: s}
+		println(string(snip.Body))
+		if err != nil {
+			http.Error(w, "Snippet not found", http.StatusNotFound)
+			return
+		}
+		if serveText {
+			w.Header().Set("Content-type", "text/plain")
+			w.Write(s)
+			return
+		}
+	}
 
 	editTemplate.Execute(w, &editData{snip})
 }

@@ -49,10 +49,10 @@ func zigRun(code []byte) (stdout string, stderr string) {
 	defer os.Remove(f.Name())
 	_c, _ := url.QueryUnescape(string(code))
 	f.Write([]byte(_c[15:]))
-	// 5s timeout by default, use firejail if present limiting network/ram usage
+	// 5s timeout by default, use firejail if present limiting network (no access) and ram usage (10MB limit)
 	cmd := exec.Command("timeout", "5s", "zig", "run", f.Name())
 	if _, err := exec.LookPath("firejail"); err == nil {
-		cmd = exec.Command("timeout", "5s", "firejail", "--net=none", "--rlimit-as=1024", "zig", "run", f.Name())
+		cmd = exec.Command("timeout", "5s", "firejail", "--noprofile", "--net=none", "--rlimit-as=10m", "zig", "run", f.Name())
 	}
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb

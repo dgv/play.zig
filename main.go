@@ -1,15 +1,16 @@
 package main
 
 import (
+	"database/sql"
+	"log"
 	"net/http"
 	"os"
-	"log"
-	"database/sql"
 )
 
 type DB struct {
 	*sql.DB
 }
+
 var db DB
 
 func main() {
@@ -22,11 +23,8 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	fileHandler := http.FileServer(http.Dir("./static/"))
-	logger := func(rw http.ResponseWriter, r *http.Request) {
-		fileHandler.ServeHTTP(rw, r)
-	}
-	http.HandleFunc("/static/", logger)
+
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		panic(err)
 	}
