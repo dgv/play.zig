@@ -10,6 +10,7 @@ auto_rollback = true
 internal_port = 8080
 protocol = "tcp"
 [[services.ports]]
+handlers = ["tls", "http"]
 port = 443
 [[services.tcp_checks]]
 interval = "15s"
@@ -18,6 +19,6 @@ grace_period = "1s"
 
 [mounts]
 source = "data"
-destination = "/usr/local"
+destination = "/home"
 processes = ["disk"]
 initial_size = "1gb"

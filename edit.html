@@ -41,26 +41,16 @@
                 enableHistory: true,
             });
 
-            $("#code").attr("wrap", "off");
-            var about = $("#about");
-            var wrap = $("#wrap");
-            about.click(function (e) {
-                if ($(e.target).is("a")) {
-                    return;
-                }
-                about.hide();
-                wrap.show();
+            $(function(){
+              // bind change event to select
+              $('#ziglings').on('change', function () {
+                var url = '/?zigling='+$(this).val(); // get selected value
+                  if (url) { // require a URL
+                      window.location = url; // redirect
+                  }
+                  return false;
+              });
             });
-            $("#aboutButton").click(function () {
-                if (about.is(":visible")) {
-                    about.hide();
-                    wrap.show();
-                    return;
-                }
-                wrap.hide();
-                about.show();
-            });
-
             if (window.trackEvent) {
                 $("#run").click(function () {
                     window.trackEvent("playground", "click", "run-button");
@@ -91,16 +81,19 @@
 
 <body itemscope itemtype="http://schema.org/CreativeWork">
     <div id="banner">
-        <div id="head" itemprop="name">Zig Playground</div>
+        <div id="head" itemprop="name"><a href="https://github.com/dgv/play.zig" target="_blank">Zig Playground</a></div>
         <div id="controls">
             <input type="button" value="Run" id="run" />
             <input type="button" value="Format" id="fmt" />
             <input type="button" value="Share" id="share" />
             <input type="text" id="shareURL" />
         </div>
-        <!-- <div id="aboutControls">
-        <input type="button" value="About" id="aboutButton" />
-      </div> -->
+        <div id="ziglingsList">
+            <a href="https://codeberg.org/ziglings/exercises" target="_blank">Ziglings</a>: <select id="ziglings" aria-label="Ziglings files">
+                <option style="display:none"></option>
+                {{ .Ziglings }}
+                </select>
+      </div>
     </div>
     <div id="wrap">
         <textarea id="code" name="code" spellcheck="false">{{printf "%s" .Snippet.Body |html}}</textarea>

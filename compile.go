@@ -49,24 +49,28 @@ func zigRun(code []byte) (stdout string, stderr string) {
 	defer os.Remove(f.Name())
 	_c, _ := url.QueryUnescape(string(code))
 	f.Write([]byte(_c[15:]))
-	// 5s timeout by default, use firejail if present limiting network (no access) and ram usage (10MB limit)
+	// 5s timeout by default, use firejail if present limiting network (no access)
 	cmd := exec.Command("timeout", "5s", "zig", "run", f.Name())
 	if _, err := exec.LookPath("firejail"); err == nil {
-		cmd = exec.Command("timeout", "5s", "firejail", "--noprofile", "--net=none", "--rlimit-as=10m", "zig", "run", f.Name())
+		cmd = exec.Command("timeout", "5s", "firejail", "--quiet", "--noprofile", "--net=none", "zig", "run", f.Name())
 	}
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
 	err := cmd.Run()
 	stderr = errb.String()
 	if err != nil && errb.String() != "" {
-		stderr = strings.Replace(errb.String(), f.Name(), "prog.zig", -1)
+		stderr = strings.Replace(stderr, f.Name(), "prog.zig", -1)
 		if len(stderr) > 1024 {
 			stderr = stderr[:1024]
 		}
 	}
 	stdout = outb.String()
 	if len(stdout) > 1024 {
+		stdout = strings.Replace(stdout, f.Name(), "prog.zig", -1)
 		stdout = stdout[:1024]
+	}
+	if stdout == "" && stderr == "" {
+		stderr = "Timed out"
 	}
 	return stdout + "\n", stderr + "\n"
 }

@@ -5,13 +5,11 @@
 package main
 
 import (
-	//"context"
+	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"text/template"
-	//"log"
-	//"cloud.google.com/go/datastore"
-	//"google.golang.org/appengine/log"
 )
 
 const hostname = "zig.fly.dev"
@@ -23,7 +21,8 @@ func init() {
 var editTemplate = template.Must(template.ParseFiles("edit.html"))
 
 type editData struct {
-	Snippet *Snippet
+	Snippet  *Snippet
+	Ziglings string
 }
 
 func edit(w http.ResponseWriter, r *http.Request) {
@@ -32,8 +31,18 @@ func edit(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://"+hostname, http.StatusFound)
 		return
 	}
-
 	snip := &Snippet{Body: []byte(hello)}
+
+	ziglingsHTML := ziglingsList
+	if f := r.URL.Query().Get("zigling"); f != "" {
+		z, err := os.ReadFile(fmt.Sprintf("./ziglings/exercises/%s", f))
+		if err != nil {
+			http.Error(w, "zigling not found", http.StatusNotFound)
+			return
+		}
+		ziglingsHTML = strings.Replace(ziglingsHTML, f+"\">", f+"\" selected>", 1)
+		snip = &Snippet{Body: z}
+	}
 
 	if strings.HasPrefix(r.URL.Path, "/p/") {
 		id := r.URL.Path[3:]
@@ -44,7 +53,6 @@ func edit(w http.ResponseWriter, r *http.Request) {
 		}
 		s, err := db.get(id)
 		snip = &Snippet{Body: s}
-		println(string(snip.Body))
 		if err != nil {
 			http.Error(w, "Snippet not found", http.StatusNotFound)
 			return
@@ -56,7 +64,7 @@ func edit(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	editTemplate.Execute(w, &editData{snip})
+	editTemplate.Execute(w, &editData{snip, ziglingsHTML})
 }
 
 const hello = `const std = @import("std");

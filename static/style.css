@@ -11,7 +11,8 @@ body {
 }
 
 a {
-    color: #009;
+    color: #000;
+    text-decoration: none;
 }
 
 #wrap,
@@ -23,27 +24,6 @@ a {
     bottom: 25%;
     left: 0;
     right: 0;
-}
-
-#about {
-    display: none;
-    z-index: 1;
-    padding: 10px 40px;
-    font-size: 16px;
-    font-family: Georgia, serif;
-    overflow: auto;
-}
-
-#about p {
-    max-width: 520px;
-}
-
-#about ul {
-    max-width: 480px;
-}
-
-#about li {
-    margin-bottom: 1em;
 }
 
 .CodeMirror {
@@ -156,9 +136,9 @@ pre,
     border-radius: 5px;
 }
 
-#aboutControls {
+#ziglingsList {
     float: right;
-    padding: 10px 15px;
+    padding: 20px 10px;
 }
 
 input[type="button"],
