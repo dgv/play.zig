@@ -182,6 +182,15 @@ input[type="button"],
     font-family: sans-serif;
 }
 
+#ziggy {
+    z-index: 10;
+    width: 5rem;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    position: absolute;
+    max-width: 24rem;
+}
+
 .lines {
     float: left;
     overflow: hidden;

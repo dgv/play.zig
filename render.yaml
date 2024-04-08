@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: play.zig
+    region: ohio
+    plan: free
+    env: go
+    repo: https://github.com/dgv/play.zig
+    branch: master
+    buildCommand: go build -tags netgo -ldflags '-s -w' -o play-zig
+    startCommand: ./play-zig
