@@ -5,6 +5,6 @@ services:
     plan: free
     env: go
     repo: https://github.com/dgv/play.zig
-    branch: master
+    branch: main
     buildCommand: go build -tags netgo -ldflags '-s -w' -o play-zig
     startCommand: ./play-zig
