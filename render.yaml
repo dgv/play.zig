@@ -1,8 +1,0 @@
-services:
-  - type: web
-    name: play.zig
-    region: ohio
-    plan: free
-    runtime: docker
-    repo: https://github.com/dgv/play.zig
-    branch: main
