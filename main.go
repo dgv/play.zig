@@ -50,7 +50,6 @@ func main() {
 	}
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		panic(err)
-	}
+	log.Println("play.zig listening at :" + port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

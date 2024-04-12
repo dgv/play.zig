@@ -4,15 +4,17 @@
 <head>
     <title>Zig Playground</title>
     <link rel="stylesheet" href="/static/style.css" />
-    <script src="/static/jquery.min.js"></script>
+    <script
+      src="https://code.jquery.com/jquery-2.2.4.min.js"
+      integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+      crossorigin="anonymous"></script>
     <script src="/static/playground.js"></script>
     <link rel="icon" href=/static/favicon.ico>
     <link rel="shortcut icon" href=/static/favicon.svg>
-    <link rel="stylesheet" href="/static/codemirror/lib/codemirror.css" />
-    <script src="/static/codemirror/lib/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.24.0/codemirror.min.js" integrity="sha512-BmHROXH6Q9Dd/pW9Xbjthhz2fgLZ79RtjpqMfWM2ZXexZXJky3t3xTMtBkUY3ifhZrPozE6LwOyHVlfceBpzyw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.24.0/codemirror.min.css" integrity="sha512-HSTUwV7IgV9k3+iHfqu1Z8p4CI5Z+0P4ogvCO0X54FLbfRGPWnGDMqxQMSstyYDOw+J88h+Uw45/gb9BO6Tp4g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="/static/codemirror/mode/zig/zig.js"></script>
     <link rel="stylesheet" href="/static/codemirror/theme/mbo.css" />
-    <script src="/static/codemirror/addon/dialog/dialog.js"></script>
     <script src="/static/codemirror/addon/search/searchcursor.js"></script>
     <script src="/static/codemirror/addon/edit/matchbrackets.js"></script>
     <link rel="stylesheet" href="/static/codemirror/addon/dialog/dialog.css" />
@@ -81,7 +83,7 @@
 
 <body itemscope itemtype="http://schema.org/CreativeWork">
     <div id="banner">
-        <div id="head" itemprop="name"><a href="https://github.com/dgv/play.zig" target="_blank">Zig Playground</a></div>
+        <div id="head" itemprop="name"><a href="/">Zig Playground</a></div>
         <div id="controls">
             <input type="button" value="Run" id="run" />
             <input type="button" value="Format" id="fmt" />
@@ -99,7 +101,7 @@
         <textarea id="code" name="code" spellcheck="false">{{printf "%s" .Snippet.Body |html}}</textarea>
     </div>
     <div id="output"></div>
-    <img id="ziggy" class="absolute right-2 bottom-2 w-20 max-w-sm z-10" style="transform: scaleX(-1)" src="./static/ziggy.svg">
+    <a href="https://github.com/dgv/play.zig" target="_blank"><img id="ziggy" class="absolute right-2 bottom-2 w-20 max-w-sm z-10" style="transform: scaleX(-1)" src="/static/ziggy.svg"></a>
 </body>
 
 </html>

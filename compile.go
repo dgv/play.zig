@@ -8,10 +8,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -49,10 +51,30 @@ func zigRun(code []byte) (stdout string, stderr string) {
 	defer os.Remove(f.Name())
 	_c, _ := url.QueryUnescape(string(code))
 	f.Write([]byte(_c[15:]))
+
+	timeout := "5s"
+	if t := os.Getenv("ZIG_TIMEOUT"); t != "" {
+		timeout = t + "s"
+	}
 	// 5s timeout by default, use firejail if present limiting network (no access)
-	cmd := exec.Command("timeout", "5s", "zig", "run", f.Name())
+	cmd := exec.Command("timeout", timeout, "zig", "run", f.Name())
 	if _, err := exec.LookPath("firejail"); err == nil {
-		cmd = exec.Command("timeout", "5s", "firejail", "--quiet", "--noprofile", "--net=none", "zig", "run", f.Name())
+
+		quietArg := ""
+		if os.Getenv("FIREJAIL_DEBUG") != "true" {
+			quietArg = "--quiet"
+		}
+		netArg := ""
+		if os.Getenv("FIREJAIL_NET") != "true" {
+			netArg = "--net=none"
+		}
+		// zig needs 300mb of virtual mem to run
+		rlimitArg := "--rlimit-as=300m"
+		if rl, err := strconv.Atoi(os.Getenv("FIREJAIL_RLIMIT")); err == nil {
+			rlimitArg = "--rlimit-as=" + strconv.Itoa(300+rl) + "m"
+		}
+		// 5s timeout by default, use firejail if present limiting network (no access)
+		cmd = exec.Command("timeout", timeout, "firejail", quietArg, "--noprofile", "--noroot", netArg, rlimitArg, "zig", "run", f.Name())
 	}
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
@@ -69,8 +91,5 @@ func zigRun(code []byte) (stdout string, stderr string) {
 		stdout = strings.Replace(stdout, f.Name(), "prog.zig", -1)
 		stdout = stdout[:1024]
 	}
-	if stdout == "" && stderr == "" {
-		stderr = "Timed out"
-	}
-	return stdout + "\n", stderr + "\n"
+	return
 }

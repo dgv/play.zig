@@ -11,7 +11,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -74,6 +76,14 @@ func share(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
+	if url := os.Getenv("SHARE_PASSTHRU_URL"); url != "" {
+		if err := passThru(url, w, r); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(w, "Share server error.")
+			return
+		}
+		return
+	}
 
 	var body bytes.Buffer
 	_, err := io.Copy(&body, io.LimitReader(r.Body, maxSnippetSize+1))
@@ -87,4 +97,20 @@ func share(w http.ResponseWriter, r *http.Request) {
 	id := snip.Id()
 	db.put(id, body.Bytes())
 	fmt.Fprint(w, id)
+}
+
+func passThru(url string, w io.Writer, req *http.Request) error {
+	defer req.Body.Close()
+	req.Header.Set("User-Agent", "play.zig")
+	r, err := http.Post(url+"/share", req.Header.Get("Content-type"), req.Body)
+	if err != nil {
+		log.Fatalf("making POST request: %v", err)
+		return err
+	}
+	defer r.Body.Close()
+	if _, err := io.Copy(w, r.Body); err != nil {
+		log.Fatalf("copying response Body: %v", err)
+		return err
+	}
+	return nil
 }

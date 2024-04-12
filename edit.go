@@ -6,6 +6,8 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -43,24 +45,38 @@ func edit(w http.ResponseWriter, r *http.Request) {
 		ziglingsHTML = strings.Replace(ziglingsHTML, f+"\">", f+"\" selected>", 1)
 		snip = &Snippet{Body: z}
 	}
-
 	if strings.HasPrefix(r.URL.Path, "/p/") {
 		id := r.URL.Path[3:]
-		serveText := false
-		if strings.HasSuffix(id, ".zig") {
-			id = id[:len(id)-3]
-			serveText = true
-		}
-		s, err := db.get(id)
-		snip = &Snippet{Body: s}
-		if err != nil {
-			http.Error(w, "Snippet not found", http.StatusNotFound)
-			return
-		}
-		if serveText {
-			w.Header().Set("Content-type", "text/plain")
-			w.Write(s)
-			return
+		if url := os.Getenv("SHARE_PASSTHRU_URL"); url != "" {
+			r_, err := http.Get(url + "/p/" + id)
+			if err != nil {
+				log.Printf("making GET request: %v", err)
+				return
+			}
+			defer r_.Body.Close()
+			if r_.StatusCode != 200 {
+				http.Error(w, "Snippet not found", http.StatusNotFound)
+				return
+			}
+			buf, _ := ioutil.ReadAll(r_.Body)
+			snip = &Snippet{Body: buf}
+		} else {
+			serveText := false
+			if strings.HasSuffix(id, ".zig") {
+				id = id[:len(id)-3]
+				serveText = true
+			}
+			s, err := db.get(id)
+			snip = &Snippet{Body: s}
+			if err != nil {
+				http.Error(w, "Snippet not found", http.StatusNotFound)
+				return
+			}
+			if serveText {
+				w.Header().Set("Content-type", "text/plain")
+				w.Write(s)
+				return
+			}
 		}
 	}
 
