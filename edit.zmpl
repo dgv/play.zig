@@ -93,12 +93,12 @@
         <div id="ziglingsList">
             <a href="https://codeberg.org/ziglings/exercises" target="_blank">Ziglings</a>: <select id="ziglings" aria-label="Ziglings files">
                 <option style="display:none"></option>
-                {{ .Ziglings }}
+                {{.ziglings}}
                 </select>
       </div>
     </div>
     <div id="wrap">
-        <textarea id="code" name="code" spellcheck="false">{{printf "%s" .Snippet.Body |html}}</textarea>
+        <textarea id="code" name="code" spellcheck="false">{{.snippet}}</textarea>
     </div>
     <div id="output"></div>
     <a href="https://github.com/dgv/play.zig" target="_blank"><img id="ziggy" class="absolute right-2 bottom-2 w-20 max-w-sm z-10" style="transform: scaleX(-1)" src="/static/ziggy.svg"></a>

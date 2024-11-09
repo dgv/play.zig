@@ -1,0 +1,38 @@
+.{
+    .name = "play.zig",
+    .version = "0.1.0",
+    .minimum_zig_version = "0.13.0",
+    .dependencies = .{
+        .s3db = .{
+            .url = "https://github.com/dgv/s3db.zig/archive/refs/heads/main.zip",
+            .hash = "1220f1bf2619b3bbfe9575ee304fcf5907ba05bc18b8aaa94d16588036bbfd36c4bc",
+        },
+        .httpz = .{
+            .url = "https://github.com/karlseguin/http.zig/archive/refs/heads/zig-0.13.zip",
+            .hash = "12208c1f2c5f730c4c03aabeb0632ade7e21914af03e6510311b449458198d0835d6",
+        },
+        .zmpl = .{
+            .url = "https://github.com/jetzig-framework/zmpl/archive/refs/heads/zig-0.13.zip",
+            .hash = "1220d933e8ae4c77f51144f37068b9bde99a22f784fa17a4a4fb82e1bb05b3d5ac03",
+        },
+        .zcmd = .{
+            .url = "https://github.com/dgv/zcmd.zig/archive/refs/heads/main.zip",
+            .hash = "12206d2cc4f892fb965fc7f383b0aad160da84008e107d45837eb2a9f1488f29043f",
+        },
+        .tmpfile = .{
+            .url = "https://github.com/dgv/tmpfile.zig/archive/refs/heads/master.zip",
+            .hash = "1220e06b43f1b50c5b354a279bfbb152fcca34990ec515f0c6039b988047f8e04339",
+        },
+    },
+    .paths = .{
+        "static",
+        "build.zig",
+        "build.zig.zon",
+        "main.zig",
+        "compile.zig",
+        "edit.zig",
+        "edit.zmpl",
+        "fmt.zig",
+        "share.zig",
+    },
+}

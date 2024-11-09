@@ -16,9 +16,3 @@ port = 443
 interval = "15s"
 timeout = "2s"
 grace_period = "1s"
-
-[mounts]
-source = "data"
-destination = "/home"
-processes = ["disk"]
-initial_size = "1gb"

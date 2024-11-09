@@ -1,19 +1,23 @@
 # play.zig
+[![zig version](https://img.shields.io/badge/0.13.0-orange?style=flat&logo=zig&label=Zig&color=%23eba742)](https://ziglang.org/download/)
+[![reference Zig](https://img.shields.io/badge/deps%20-6-orange?color=%23eba742)](https://github.com/dgv/play.zig/blob/main/build.zig.zon)
+[![build](https://github.com/dgv/play.zig/actions/workflows/build.yml/badge.svg)](https://github.com/dgv/play.zig/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ![play.zig](https://github.com/dgv/play.zig/blob/main/screenshot.png)
 
-play.zig is just another Zig playground, actually an adaptation wrapping Zig for compilation and format code from my old [go-vim](https://github.com/dgv/go-vim) (Go Playground), will be rewritten using zig eventually... During my learning I miss some place to run ziglings or share code quickly, so here we go...
+play.zig is just another Zig playground, actually an adaptation wrapping Zig for compilation and format code from my old [go-vim](https://github.com/dgv/go-vim) (Go Playground)...
 
 Following considerations when you use it:
 
-- Runs last Zig stable version.
+- Running at last Zig stable version.
 - 5s timeout by default.
-- if firejail is installed the consumption of networking is blocked and memory limited.
-- code snippets for sharing are stored locally using sqlite.
+- if bwrap is installed the consumption of networking is sandboxed.
+- code snippets for sharing are stored using sqlite.
 
 ### Motivation
 
-Another playgrounds implementations:
+During my learning I miss some place to run [ziglings](https://codeberg.org/ziglings/exercises/) or share code quickly, so here we go. Another playgrounds implementations:
 
 - [playground from zigtools](https://github.com/zigtools/playground): nice, but weird highlighting, no fmt.
 - [zig-play](https://github.com/gsquire/zig-play): slow, no share option.
@@ -25,24 +29,24 @@ Related:
 
 ### Run locally with docker
 
-```
+```bash
 $ docker run --rm -p 8080:8080 dgvargas/play-zig
+```
+
+### Run locally from the source
+```bash
+$ git clone https://github.com/dgv/play.zig; cd play.zig
+$ zig build run
 ```
 
 ### Env vars
 
 ```
-PORT=<NUMBER>: port binding number [defult: 8080]
-ZIG_TIMEOUT=<NUMBER>: zig timeout [default: 5]
-FIREJAIL_DEBUG=<BOOL>: debug verbose [default: false]
-FIREJAIL_NET=<BOOL>: network access [default: false]
-FIREJAIL_RLIMIT=<NUMBER>: virtual memory allocation limit in MBs [default: 300]
-SHARE_PASSTHRU_URL=<STRING>: URL for skip local sharing functionality [default: ""]
+ADDR Binding Address (default: 0.0.0.0)
+PORT port binding number (defult: 3000)
+TIMEOUT timeout (default: 5)
+BWRAP_NET network access (default: false)
+AWS_ENDPOINT_URL_S3 endpoint of s3 to persist sqlite database (default: "")
+AWS_BUCKET_NAME_S3 bucket name of s3 to persist sqlite database (default: "play-zig")
 ```
-
-### Roadmap:
-
-- [x] zig wrapping
-- [x] ziglings
-- [x] expose sandbox/runtime paramenters as env vars
-- [ ] rewrite using zig
+_Note: regarding s3 persistence credentials variables (AWS_ACCESS_KEY_ID, AWS_ENDPOINT_URL_S3, AWS_REGION) must be set to work properly._
