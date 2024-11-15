@@ -11,6 +11,7 @@ RUN ARCH=$(uname -m) &&\
     rm zig-linux-$ARCH-0.13.0.tar.xz &&\
     mv zig-linux-$ARCH-0.13.0 zig
 ENV PATH="/home/$USER/zig:$PATH"
+ENV TMPDIR="/tmp"
 ENV LD_LIBRARY_PATH="/home/$USER"
 RUN git clone https://codeberg.org/ziglings/exercises/ ziglings
 RUN zig build -p . --prefix-exe-dir .

@@ -4,7 +4,8 @@ const httpz = @import("httpz");
 const zmpl = @import("zmpl");
 const zcmd = @import("zcmd");
 const tmp = @import("tmpfile");
-const ziglyph = @import("ziglyph");
+const string = @import("string");
+const Collator = @import("ziglyph").Collator;
 
 const max_snippet_size = 64 * 1024;
 const gpa = global.allocator();
@@ -17,13 +18,20 @@ const hello =
     \\pub fn main() !void {
     \\    std.debug.print("Hello from Zig {}", .{builtin.zig_version});
     \\}
+    \\
 ;
 
 var global = std.heap.GeneralPurposeAllocator(.{}){};
 var db: s3db.Db = undefined;
-var ziglings_list = std.ArrayList(u8).init(std.heap.page_allocator);
+var ziglings_list = std.ArrayList(u8).init(gpa);
 
-fn loadZiglings() !void {
+fn loadZiglings(alloc: std.mem.Allocator, zigling: []const u8) !void {
+    var collator = try Collator.init(alloc);
+    defer collator.deinit();
+    var temp = std.ArrayList([]u8).init(alloc);
+    defer temp.deinit();
+
+    _ = try ziglings_list.toOwnedSlice();
     var dir = std.fs.cwd().openDir("ziglings/exercises", .{ .iterate = true }) catch |e| switch (e) {
         error.FileNotFound => {
             std.debug.print("ziglings dir not found\n", .{});
@@ -37,23 +45,27 @@ fn loadZiglings() !void {
             continue;
         }
         const html = try std.fmt.allocPrint(
-            gpa,
-            "<option value=\"{s}\">{s}</option>",
-            //.{ gpa.dupe(u8, file.name), gpa.dupe(u8, file.name) },
-            .{ file.name, file.name },
+            alloc,
+            "<option value=\"{s}\" {s}>{s}</option>",
+            .{ file.name, if (std.mem.eql(u8, file.name, zigling)) "selected" else "", file.name },
         );
-        try ziglings_list.appendSlice(html);
+        try temp.append(html);
+    }
+
+    std.mem.sort([]u8, temp.items, collator, Collator.ascendingCaseless);
+    for (temp.items) |t| {
+        try ziglings_list.appendSlice(try alloc.dupe(u8, t));
     }
 }
 
 pub fn main() !void {
     defer ziglings_list.deinit();
-    try loadZiglings();
     // parse env
     const addr = std.process.getEnvVarOwned(gpa, "ADDR") catch "0.0.0.0";
     const port = try std.fmt.parseUnsigned(u16, std.process.getEnvVarOwned(gpa, "PORT") catch "3000", 10);
     // init db
     try initDb();
+    defer db.deinit();
     // server config
     var server = try httpz.Server().init(gpa, .{ .address = addr, .port = port, .request = .{
         .max_form_count = 4,
@@ -82,28 +94,33 @@ fn edit(req: *httpz.Request, res: *httpz.Response) !void {
     // /p/<snippet id>
     const snippet = req.param("snippet") orelse "";
     if (!std.mem.eql(u8, snippet, "")) {
-        content = get(snippet) catch hello;
+        content = get(snippet) catch {
+            res.status = 404;
+            res.body = "Snippet not found";
+            return;
+        };
     }
     const query = try req.query();
     const zigling = query.get("zigling") orelse "";
+
     if (!std.mem.eql(u8, zigling, "")) {
+        try loadZiglings(req.arena, zigling);
         const path = try std.fmt.allocPrint(req.arena, "./ziglings/exercises/{s}", .{zigling});
         var file = std.fs.cwd().openFile(path, .{}) catch {
             res.status = 404;
-            res.body = "Not found";
+            res.body = "Zigling not found";
             return;
         };
         content = try file.reader().readAllAlloc(req.arena, max_snippet_size);
         defer file.close();
+    } else {
+        try loadZiglings(req.arena, zigling);
     }
 
     var d = zmpl.Data.init(res.arena);
     defer d.deinit();
     var root = try d.root(.object);
-    var c = try ziglyph.Collator.init(req.arena);
-    defer c.deinit();
 
-    //std.mem.sort(u8, ziglings_list.items, c, ziglyph.Collator.ascendingCaseless);
     try root.put("snippet", content);
     try root.put("ziglings", ziglings_list.items);
     if (zmpl.find("edit")) |template| {
@@ -133,51 +150,78 @@ fn static(req: *httpz.Request, res: *httpz.Response) !void {
     res.body = try req.arena.dupe(u8, content);
 }
 
+fn isUnreserved(c: u8) bool {
+    return switch (c) {
+        ':', ',', '?', '#', '[', ']', '@' => true,
+        '!', '$', '&', '\'', '(', ')', '*', '+', ';', '=' => true,
+        'A'...'Z', 'a'...'z', '0'...'9', '-', '.', '_', '~' => true,
+        '/', ' ' => true,
+        else => false,
+    };
+}
+
 fn run(req: *httpz.Request, res: *httpz.Response) !void {
     var timer = try std.time.Timer.start();
     defer {
         const elapsed = timer.lap() / 1000;
-        std.log.info("{any} {s} from {any} {d}ms", .{ req.method, req.url.raw, req.address, elapsed });
+        std.log.info("{any} {d} {s} from {any} {d}ms", .{ req.method, res.status, req.url.raw, req.address, elapsed });
     }
     var f: output = undefined;
     const b = try req.formData();
     const code = b.get("body") orelse "";
     const isFmt = std.mem.containsAtLeast(u8, req.url.raw, 1, "fmt");
     f = try if (isFmt) runFmt(req.arena, code) else runCompile(req.arena, code);
-    var err: []const u8 = "";
-    if (!std.mem.eql(u8, f.stderr.?, "")) {
-        err = f.stderr.?;
-        var idx = std.mem.indexOfAny(u8, ".zig:", err).?;
-        if (idx > 0) idx += 5;
-        std.debug.print("{s}\n", .{err[idx .. err.len - 1]});
-        err = err[idx .. err.len - 1];
+    var temp = std.ArrayList(u8).init(req.arena);
+    defer temp.deinit();
+    if (!std.mem.eql(u8, f.stderr, "")) {
+        var splitAllStr = try string.String.init_with_contents(
+            req.arena,
+            f.stderr,
+        );
+        const a = try splitAllStr.lines();
+        if (a.len > 1) {
+            splitAllStr = a[0];
+        }
+        _ = try splitAllStr.replace(".zig", "prog.zig");
+        _ = try splitAllStr.replace("<stdin>", "prog.zig");
+        const idx = splitAllStr.find("prog.zig") orelse 0;
+        defer splitAllStr.deinit();
+        try std.Uri.Component.percentEncode(temp.writer(), splitAllStr.str()[idx..splitAllStr.len()], isUnreserved);
     }
-
+    const out = temp.items;
     if (isFmt) {
-        try res.json(.{ .Error = err, .Body = f.stdout orelse "" }, .{});
+        try res.json(.{ .Error = out, .Body = f.stdout }, .{});
     } else {
-        try res.json(.{ .Errors = err, .Events = .{ .Message = f.stdout orelse "", .Kind = "stdout", .Delay = 0 }, .VetErrors = "" }, .{});
+        try res.json(.{ .Errors = out, .Events = .{ .Message = f.stdout, .Kind = "stdout", .Delay = 0 }, .VetErrors = "" }, .{});
     }
 }
 
 fn share(req: *httpz.Request, res: *httpz.Response) !void {
-    _ = req;
-    _ = res;
+    var timer = try std.time.Timer.start();
+    defer {
+        const elapsed = timer.lap() / 1000;
+        std.log.info("{any} {d} {s} from {any} {d}ms", .{ req.method, res.status, req.url.raw, req.address, elapsed });
+    }
+    const code = req.body() orelse "";
+    const id = try snippetId(code);
+    try put(id, code);
+    res.body = id;
+    res.content_type = .TEXT;
 }
 
 fn metrics(req: *httpz.Request, res: *httpz.Response) !void {
     var timer = try std.time.Timer.start();
     defer {
         const elapsed = timer.lap() / 1000;
-        std.log.info("{any} {s} from {any} {d}ms", .{ req.method, req.url.raw, req.address, elapsed });
+        std.log.info("{any} {d} {s} from {any} {d}ms", .{ req.method, res.status, req.url.raw, req.address, elapsed });
     }
     res.content_type = .TEXT;
     return httpz.writeMetrics(res.writer());
 }
 
 const output = struct {
-    stdout: ?[]const u8,
-    stderr: ?[]const u8,
+    stdout: []const u8,
+    stderr: []const u8,
 };
 
 pub fn runFmt(alloc: std.mem.Allocator, code: []const u8) !output {
@@ -188,7 +232,14 @@ pub fn runFmt(alloc: std.mem.Allocator, code: []const u8) !output {
         },
         .stdin_input = code,
     });
-    return output{ .stdout = result.stdout, .stderr = result.stderr };
+    defer result.deinit();
+    const out = try alloc.dupe(u8, result.stdout orelse "");
+    var ido = out.len;
+    if (out.len > 1024) ido = 1024;
+    const err = try alloc.dupe(u8, result.stderr orelse "");
+    var ide = err.len;
+    if (err.len > 1024) ide = 1024;
+    return output{ .stdout = out[0..ido], .stderr = err[0..ide] };
 }
 
 pub fn runCompile(alloc: std.mem.Allocator, code: []const u8) !output {
@@ -204,38 +255,24 @@ pub fn runCompile(alloc: std.mem.Allocator, code: []const u8) !output {
             &.{ "timeout", "5s", "zig", "run", tmp_file.abs_path },
         },
     });
-    return output{ .stdout = result.stdout, .stderr = result.stderr };
+    defer result.deinit();
+    return output{ .stdout = try alloc.dupe(u8, result.stdout orelse ""), .stderr = try alloc.dupe(u8, result.stderr orelse "") };
 }
 
-fn snippetId(body: []u8) ![]const u8 {
-    // h := sha256.New()
-    // 	io.WriteString(h, salt)
-    // 	h.Write(s.Body)
-    // 	sum := h.Sum(nil)
-    // 	b := make([]byte, base64.URLEncoding.EncodedLen(len(sum)))
-    // 	base64.URLEncoding.Encode(b, sum)
-    // 	// Web sites don’t always linkify a trailing underscore, making it seem like
-    // 	// the link is broken. If there is an underscore at the end of the substring,
-    // 	// extend it until there is not.
-    // 	hashLen := 11
-    // 	for hashLen <= len(b) && b[hashLen-1] == '_' {
-    // 		hashLen++
-    // 	}
-    // 	return string(b)[:hashLen]
-    return body;
-    // var out: [64]u8 = undefined;
-    // var h = std.crypto.hash.sha2.Sha256.init(.{});
-    // h.update(salt);
-    // h.update(body);
-    // h.final(out[0..]);
-    // var b: []u8 =undefined;
-    // std.base64.Base64Encoder.encode(encoder: *const Base64Encoder, dest: []u8, source: []const u8)
-
-    // var hashLen = 11;
-    // for (hashLen <= b.len and b[hashLen-1] == '_') {
-    //     hashLen+=1;
-    // }
-    // return b[0..hashLen];
+fn snippetId(body: []const u8) ![]const u8 {
+    var hash: [32]u8 = undefined;
+    var sha256 = std.crypto.hash.sha2.Sha256.init(.{});
+    sha256.update(salt);
+    sha256.update(body);
+    sha256.final(hash[0..]);
+    const base64 = std.base64.Base64Encoder.init(std.base64.url_safe_alphabet_chars, null);
+    var out_buf: [64]u8 = undefined;
+    const encoded = base64.encode(&out_buf, &hash);
+    var hashLen: usize = 11;
+    while (hashLen <= encoded.len and encoded[hashLen - 1] == '_') {
+        hashLen += 1;
+    }
+    return try gpa.dupe(u8, encoded[0..hashLen]);
 }
 
 fn initDb() !void {
@@ -245,25 +282,25 @@ fn initDb() !void {
         .mode = s3db.Db.Mode{ .Memory = {} },
         .open_flags = .{ .write = true },
     });
-    defer db.deinit();
+
     if (!std.mem.eql(u8, s3endpoint, "")) {
         try db.exec("create virtual table if not exists snippets using s3db (s3_endpoint=$s3endpoint{[]const u8}, s3_bucket=$s3bucket{[]const u8}, s3_prefix='snippets', columns='key text primary key, value text')", .{}, .{ .s3endpoint = s3endpoint, .s3bucket = s3bucket });
     } else {
         try db.exec("create table if not exists snippets (key text primary key, value text)", .{}, .{});
     }
 }
-fn put(id: []const u8, code: []u8) !void {
-    return try db.exec("insert into snippets(key, value) values($key{[]const u8}, $value{[]const u8})", .{}, .{ id, code });
+
+fn put(id: []const u8, code: []const u8) !void {
+    return try db.exec("insert or replace into snippets(key, value) values($key{[]const u8}, $value{[]const u8})", .{}, .{ .key = id, .value = code });
 }
 
 fn get(id: []const u8) ![]const u8 {
-    // var stmt = try db.prepare("select id from user where key = $key{[]const u8}");
-    // defer stmt.deinit();
-
-    // const id1 = try stmt.one([]u8, .{}, .{
-    //     .key = id,
-    // });
-
-    // return id1.?;
-    return id;
+    const kv = struct {
+        key: []const u8,
+        value: []const u8,
+    };
+    const code = try db.oneAlloc(kv, std.heap.page_allocator, "select id from user where key = $key{[]const u8}", .{}, .{
+        .key = id,
+    });
+    return if (code) |v| v.value else "";
 }

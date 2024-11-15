@@ -22,14 +22,10 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     }).module("s3db"));
-    exe.root_module.addImport("tmpfile", b.dependency("tmpfile", .{
-        .target = target,
-        .optimize = optimize,
-    }).module("tmpfile"));
-    exe.root_module.addImport("zcmd", b.dependency("zcmd", .{
-        .target = target,
-        .optimize = optimize,
-    }).module("zcmd"));
+    exe.root_module.addImport("tmpfile", b.dependency("tmpfile", .{}).module("tmpfile"));
+    exe.root_module.addImport("zcmd", b.dependency("zcmd", .{}).module("zcmd"));
+    exe.root_module.addImport("string", b.dependency("zig-string", .{}).module("string"));
+    exe.root_module.addImport("ziglyph", b.dependency("ziglyph", .{}).module("ziglyph"));
     exe.root_module.addImport("zmpl", b.dependency("zmpl", .{
         .target = target,
         .optimize = optimize,

@@ -23,6 +23,14 @@
             .url = "https://github.com/dgv/tmpfile.zig/archive/refs/heads/master.zip",
             .hash = "1220e06b43f1b50c5b354a279bfbb152fcca34990ec515f0c6039b988047f8e04339",
         },
+        .@"zig-string" = .{
+            .url = "https://github.com/JakubSzark/zig-string/archive/refs/heads/master.zip",
+            .hash = "122047e740a48165ed1cdd10b8c595cb5b37d2ae2128364957ba0a8de5c7dc396adf",
+        },
+        .ziglyph = .{
+            .url = "https://codeberg.org/dude_the_builder/ziglyph/archive/v0.13.1.tar.gz",
+            .hash = "12207831bce7d4abce57b5a98e8f3635811cfefd160bca022eb91fe905d36a02cf25",
+        },
     },
     .paths = .{
         "static",
