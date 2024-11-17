@@ -69,9 +69,13 @@ pub fn main() !void {
     try initDb(s3endpoint, s3bucket);
     defer db.deinit();
     // server config
-    var server = try httpz.Server().init(gpa, .{ .address = addr, .port = port, .request = .{
-        .max_form_count = 4,
-    } });
+    var server = try httpz.Server().init(gpa, .{
+        .address = addr,
+        .port = port,
+        .request = .{
+            .max_form_count = 2,
+        },
+    });
     // routes
     var router = server.router();
     router.get("/", edit);
@@ -162,8 +166,7 @@ fn run(req: *httpz.Request, res: *httpz.Response) !void {
     const b = try req.formData();
     const code = b.get("body") orelse "";
     const isFmt = std.mem.containsAtLeast(u8, req.url.raw, 1, "fmt");
-
-    f = try if (isFmt) runFmt(req.arena, code) else runCompile(code);
+    f = try if (isFmt) runFmt(req.arena, code) else runCompile(req.arena, code);
     var parsed_err: []const u8 = "";
     if (!std.mem.eql(u8, f.stderr, "")) {
         var temp_str = try string.String.init_with_contents(
@@ -214,28 +217,39 @@ const output = struct {
 };
 
 pub fn runFmt(alloc: std.mem.Allocator, code: []const u8) !output {
-    const result = try zcmd.run(.{
-        .allocator = alloc,
-        .commands = &[_][]const []const u8{
-            &.{ "zig", "fmt", "--stdin" },
-        },
-        .stdin_input = code,
-    });
-    defer result.deinit();
-    return output{ .stdout = try alloc.dupe(u8, result.stdout orelse ""), .stderr = try alloc.dupe(u8, result.stderr orelse "") };
+    var tmp_file = try tmp.tmpFile(.{ .sufix = ".zig" });
+    defer tmp_file.deinit();
+    try tmp_file.f.writeAll(code);
+    try tmp_file.f.seekTo(0);
+    var temp = std.ArrayList(u8).init(alloc);
+    defer temp.deinit();
+    var formatted: []const u8 = "";
+    const source_code = try std.zig.readSourceFileToEndAlloc(alloc, tmp_file.f, null);
+    const tree = try std.zig.Ast.parse(alloc, source_code, .zig);
+
+    const color = std.meta.stringToEnum(std.zig.Color, "off").?;
+    if (tree.errors.len != 0) {
+        try std.zig.printAstErrorsToStderr(alloc, tree, "<stdin>", .off);
+        const zir = try std.zig.AstGen.generate(alloc, tree);
+        var wip_errors: std.zig.ErrorBundle.Wip = undefined;
+        try wip_errors.init(alloc);
+        defer wip_errors.deinit();
+        try wip_errors.addZirErrorMessages(zir, tree, source_code, "<stdin>");
+        var error_bundle = try wip_errors.toOwnedBundle("");
+        defer error_bundle.deinit(alloc);
+        try error_bundle.renderToWriter(color.renderOptions(), temp.writer());
+    } else formatted = try tree.render(alloc);
+    return output{ .stdout = try alloc.dupe(u8, formatted), .stderr = try alloc.dupe(u8, temp.items) };
 }
 
-pub fn runCompile(code: []const u8) !output {
-    const alloc = std.heap.page_allocator;
-    // allocating 1MB for cmd
-    const mem = try alloc.alloc(u8, 1000000);
-    defer alloc.free(mem);
+pub fn runCompile(alloc: std.mem.Allocator, code: []const u8) !output {
     var tmp_file = try tmp.tmpFile(.{ .sufix = ".zig" });
     defer tmp_file.deinit();
     try tmp_file.f.writeAll(code);
     try tmp_file.f.seekTo(0);
     var buf: [max_snippet_size]u8 = undefined;
     _ = try tmp_file.f.readAll(&buf);
+
     const firejail = try zcmd.run(.{
         .allocator = alloc,
         .commands = &[_][]const []const u8{
@@ -243,7 +257,7 @@ pub fn runCompile(code: []const u8) !output {
         },
     });
     var cmd = &[_][]const []const u8{
-        &.{ "timeout", "15s", "firejail", "--quiet", "--net=none", "--noprofile", "--noroot", "--rlimit-as=300m", "zig", "run", "--color", "off", tmp_file.abs_path },
+        &.{ "timeout", "5s", "firejail", "--quiet", "--net=none", "--noprofile", "--noroot", "zig2", "run", "--color", "off", tmp_file.abs_path },
     };
     if (!std.mem.eql(u8, firejail.trimedStderr(), "")) {
         std.log.debug("no firejail detected", .{});
