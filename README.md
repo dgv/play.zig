@@ -12,7 +12,7 @@ Following considerations when you use it:
 
 - Running at last Zig stable version.
 - 5s timeout by default.
-- if bwrap is installed the consumption of networking is sandboxed.
+- if firejail is installed the consumption of networking is sandboxed.
 - code snippets for sharing are stored using sqlite.
 
 ### Motivation
@@ -43,9 +43,7 @@ $ zig build run
 
 ```
 ADDR Binding Address (default: 0.0.0.0)
-PORT port binding number (defult: 3000)
-TIMEOUT timeout (default: 5)
-BWRAP_NET network access (default: false)
+PORT port binding number (defult: 8080)
 AWS_ENDPOINT_URL_S3 endpoint of s3 to persist sqlite database (default: "")
 AWS_BUCKET_NAME_S3 bucket name of s3 to persist sqlite database (default: "play-zig")
 ```

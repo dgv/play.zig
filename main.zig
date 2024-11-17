@@ -62,9 +62,11 @@ pub fn main() !void {
     defer ziglings_list.deinit();
     // parse env
     const addr = std.process.getEnvVarOwned(gpa, "ADDR") catch "0.0.0.0";
-    const port = try std.fmt.parseUnsigned(u16, std.process.getEnvVarOwned(gpa, "PORT") catch "3000", 10);
+    const port = try std.fmt.parseUnsigned(u16, std.process.getEnvVarOwned(gpa, "PORT") catch "8080", 10);
+    const s3bucket = std.process.getEnvVarOwned(gpa, "AWS_BUCKET_NAME_S3") catch "play-zig";
+    const s3endpoint = std.process.getEnvVarOwned(gpa, "AWS_ENDPOINT_URL_S3") catch "";
     // init db
-    try initDb();
+    try initDb(s3endpoint, s3bucket);
     defer db.deinit();
     // server config
     var server = try httpz.Server().init(gpa, .{ .address = addr, .port = port, .request = .{
@@ -94,7 +96,7 @@ fn edit(req: *httpz.Request, res: *httpz.Response) !void {
     // /p/<snippet id>
     const snippet = req.param("snippet") orelse "";
     if (!std.mem.eql(u8, snippet, "")) {
-        content = get(snippet) catch {
+        content = get(req.arena, snippet) catch {
             res.status = 404;
             res.body = "Snippet not found";
             return;
@@ -150,16 +152,6 @@ fn static(req: *httpz.Request, res: *httpz.Response) !void {
     res.body = try req.arena.dupe(u8, content);
 }
 
-fn isUnreserved(c: u8) bool {
-    return switch (c) {
-        ':', ',', '?', '#', '[', ']', '@' => true,
-        '!', '$', '&', '\'', '(', ')', '*', '+', ';', '=' => true,
-        'A'...'Z', 'a'...'z', '0'...'9', '-', '.', '_', '~' => true,
-        '/', ' ' => true,
-        else => false,
-    };
-}
-
 fn run(req: *httpz.Request, res: *httpz.Response) !void {
     var timer = try std.time.Timer.start();
     defer {
@@ -170,29 +162,24 @@ fn run(req: *httpz.Request, res: *httpz.Response) !void {
     const b = try req.formData();
     const code = b.get("body") orelse "";
     const isFmt = std.mem.containsAtLeast(u8, req.url.raw, 1, "fmt");
-    f = try if (isFmt) runFmt(req.arena, code) else runCompile(req.arena, code);
-    var temp = std.ArrayList(u8).init(req.arena);
-    defer temp.deinit();
+
+    f = try if (isFmt) runFmt(req.arena, code) else runCompile(code);
+    var parsed_err: []const u8 = "";
     if (!std.mem.eql(u8, f.stderr, "")) {
-        var splitAllStr = try string.String.init_with_contents(
+        var temp_str = try string.String.init_with_contents(
             req.arena,
             f.stderr,
         );
-        const a = try splitAllStr.lines();
-        if (a.len > 1) {
-            splitAllStr = a[0];
-        }
-        _ = try splitAllStr.replace(".zig", "prog.zig");
-        _ = try splitAllStr.replace("<stdin>", "prog.zig");
-        const idx = splitAllStr.find("prog.zig") orelse 0;
-        defer splitAllStr.deinit();
-        try std.Uri.Component.percentEncode(temp.writer(), splitAllStr.str()[idx..splitAllStr.len()], isUnreserved);
+        _ = try temp_str.replace(".zig", "prog.zig");
+        _ = try temp_str.replace("<stdin>", "prog.zig");
+        const idx = temp_str.find("prog.zig") orelse 0;
+        defer temp_str.deinit();
+        parsed_err = try req.arena.dupe(u8, temp_str.str()[idx..temp_str.len()]);
     }
-    const out = temp.items;
     if (isFmt) {
-        try res.json(.{ .Error = out, .Body = f.stdout }, .{});
+        try res.json(.{ .Error = parsed_err, .Body = f.stdout }, .{});
     } else {
-        try res.json(.{ .Errors = out, .Events = .{ .Message = f.stdout, .Kind = "stdout", .Delay = 0 }, .VetErrors = "" }, .{});
+        try res.json(.{ .Errors = parsed_err, .Events = .{ .Message = f.stdout, .Kind = "stdout", .Delay = 0 }, .VetErrors = "" }, .{});
     }
 }
 
@@ -204,7 +191,9 @@ fn share(req: *httpz.Request, res: *httpz.Response) !void {
     }
     const code = req.body() orelse "";
     const id = try snippetId(code);
-    try put(id, code);
+    if (std.mem.eql(u8, get(req.arena, id) catch "", "")) {
+        try put(id, code);
+    }
     res.body = id;
     res.content_type = .TEXT;
 }
@@ -233,30 +222,41 @@ pub fn runFmt(alloc: std.mem.Allocator, code: []const u8) !output {
         .stdin_input = code,
     });
     defer result.deinit();
-    const out = try alloc.dupe(u8, result.stdout orelse "");
-    var ido = out.len;
-    if (out.len > 1024) ido = 1024;
-    const err = try alloc.dupe(u8, result.stderr orelse "");
-    var ide = err.len;
-    if (err.len > 1024) ide = 1024;
-    return output{ .stdout = out[0..ido], .stderr = err[0..ide] };
+    return output{ .stdout = try alloc.dupe(u8, result.stdout orelse ""), .stderr = try alloc.dupe(u8, result.stderr orelse "") };
 }
 
-pub fn runCompile(alloc: std.mem.Allocator, code: []const u8) !output {
+pub fn runCompile(code: []const u8) !output {
+    const alloc = std.heap.page_allocator;
+    // allocating 1MB for cmd
+    const mem = try alloc.alloc(u8, 1000000);
+    defer alloc.free(mem);
     var tmp_file = try tmp.tmpFile(.{ .sufix = ".zig" });
     defer tmp_file.deinit();
     try tmp_file.f.writeAll(code);
     try tmp_file.f.seekTo(0);
     var buf: [max_snippet_size]u8 = undefined;
     _ = try tmp_file.f.readAll(&buf);
-    const result = try zcmd.run(.{
+    const firejail = try zcmd.run(.{
         .allocator = alloc,
         .commands = &[_][]const []const u8{
-            &.{ "timeout", "5s", "zig", "run", tmp_file.abs_path },
+            &.{ "firejail", "--quiet", "zig", "version" },
         },
     });
+    var cmd = &[_][]const []const u8{
+        &.{ "timeout", "15s", "firejail", "--quiet", "--net=none", "--noprofile", "--noroot", "--rlimit-as=300m", "zig", "run", "--color", "off", tmp_file.abs_path },
+    };
+    if (!std.mem.eql(u8, firejail.trimedStderr(), "")) {
+        std.log.debug("no firejail detected", .{});
+        cmd = &[_][]const []const u8{
+            &.{ "zig", "run", "--color", "off", tmp_file.abs_path },
+        };
+    }
+    const result = try zcmd.run(.{
+        .allocator = alloc,
+        .commands = cmd,
+    });
     defer result.deinit();
-    return output{ .stdout = try alloc.dupe(u8, result.stdout orelse ""), .stderr = try alloc.dupe(u8, result.stderr orelse "") };
+    return output{ .stdout = try alloc.dupe(u8, result.trimedStdout()), .stderr = try alloc.dupe(u8, result.trimedStderr()) };
 }
 
 fn snippetId(body: []const u8) ![]const u8 {
@@ -275,32 +275,31 @@ fn snippetId(body: []const u8) ![]const u8 {
     return try gpa.dupe(u8, encoded[0..hashLen]);
 }
 
-fn initDb() !void {
-    const s3bucket = std.process.getEnvVarOwned(gpa, "AWS_BUCKET_NAME_S3") catch "play-zig";
-    const s3endpoint = std.process.getEnvVarOwned(gpa, "AWS_ENDPOINT_URL_S3") catch "";
+fn initDb(s3endpoint: []const u8, s3bucket: []const u8) !void {
     db = try s3db.init(.{
         .mode = s3db.Db.Mode{ .Memory = {} },
         .open_flags = .{ .write = true },
     });
-
     if (!std.mem.eql(u8, s3endpoint, "")) {
-        try db.exec("create virtual table if not exists snippets using s3db (s3_endpoint=$s3endpoint{[]const u8}, s3_bucket=$s3bucket{[]const u8}, s3_prefix='snippets', columns='key text primary key, value text')", .{}, .{ .s3endpoint = s3endpoint, .s3bucket = s3bucket });
+        try db.execDynamic(try std.fmt.allocPrint(gpa, "CREATE VIRTUAL TABLE snippets USING s3db (s3_endpoint='{s}', s3_bucket='{s}', s3_prefix='snippets', columns='id text primary key, value text')", .{ s3endpoint, s3bucket }), .{}, .{});
     } else {
-        try db.exec("create table if not exists snippets (key text primary key, value text)", .{}, .{});
+        try db.exec("CREATE TABLE snippets (id text primary key, value text)", .{}, .{});
     }
 }
 
 fn put(id: []const u8, code: []const u8) !void {
-    return try db.exec("insert or replace into snippets(key, value) values($key{[]const u8}, $value{[]const u8})", .{}, .{ .key = id, .value = code });
+    try db.exec("INSERT INTO snippets (id, value) VALUES($id{[]const u8}, $value{[]const u8})", .{}, .{ .id = id, .value = code });
 }
 
-fn get(id: []const u8) ![]const u8 {
+fn get(alloc: std.mem.Allocator, id: []const u8) ![]const u8 {
     const kv = struct {
-        key: []const u8,
         value: []const u8,
     };
-    const code = try db.oneAlloc(kv, std.heap.page_allocator, "select id from user where key = $key{[]const u8}", .{}, .{
-        .key = id,
+    const code = try db.oneAlloc(kv, alloc, "SELECT value FROM snippets WHERE id = $id{[]const u8}", .{}, .{
+        .id = id,
     });
-    return if (code) |v| v.value else "";
+    if (code) |v| {
+        defer alloc.free(v.value);
+        return try gpa.dupe(u8, v.value);
+    } else return error.SnippetNotFound;
 }
