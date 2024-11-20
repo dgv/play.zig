@@ -14,7 +14,7 @@ pub fn build(b: *std.Build) !void {
     );
     const exe = b.addExecutable(.{
         .name = "play-zig",
-        .root_source_file = b.path("main.zig"),
+        .root_source_file = b.path("play.zig"),
         .target = target,
         .optimize = optimize,
     });
