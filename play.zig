@@ -9,7 +9,6 @@ const Collator = @import("ziglyph").Collator;
 
 const max_snippet_size = 64 * 1024;
 const gpa = global.allocator();
-const bufsize = 8196;
 const salt = "Zig playground salt\n";
 const hello =
     \\const std = @import("std");
@@ -177,7 +176,7 @@ fn run(req: *httpz.Request, res: *httpz.Response) !void {
         _ = try temp_str.replace("<stdin>", "prog.zig");
         const idx = temp_str.find("prog.zig") orelse 0;
         defer temp_str.deinit();
-        parsed_err = try req.arena.dupe(u8, temp_str.str()[idx..temp_str.len()]);
+        parsed_err = try req.arena.dupe(u8, temp_str.str()[idx..]);
     }
     if (isFmt) {
         try res.json(.{ .Error = parsed_err, .Body = f.stdout }, .{});
@@ -295,9 +294,9 @@ fn initDb(s3endpoint: []const u8, s3bucket: []const u8) !void {
         .open_flags = .{ .write = true },
     });
     if (!std.mem.eql(u8, s3endpoint, "")) {
-        try db.execDynamic(try std.fmt.allocPrint(gpa, "CREATE VIRTUAL TABLE snippets USING s3db (s3_endpoint='{s}', s3_bucket='{s}', s3_prefix='snippets', columns='id text primary key, value text')", .{ s3endpoint, s3bucket }), .{}, .{});
+        try db.execDynamic(try std.fmt.allocPrint(gpa, "CREATE VIRTUAL TABLE IF NOT EXISTS snippets USING s3db (s3_endpoint='{s}', s3_bucket='{s}', s3_prefix='snippets', columns='id text primary key, value text')", .{ s3endpoint, s3bucket }), .{}, .{});
     } else {
-        try db.exec("CREATE TABLE snippets (id text primary key, value text)", .{}, .{});
+        try db.exec("CREATE TABLE IF NOT EXISTS snippets (id text primary key, value text)", .{}, .{});
     }
 }
 
