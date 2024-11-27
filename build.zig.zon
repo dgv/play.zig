@@ -36,11 +36,7 @@
         "static",
         "build.zig",
         "build.zig.zon",
-        "main.zig",
-        "compile.zig",
-        "edit.zig",
+        "play.zig",
         "edit.zmpl",
-        "fmt.zig",
-        "share.zig",
     },
 }
