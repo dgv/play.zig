@@ -12,7 +12,7 @@ Following considerations when you use it:
 
 - Running at last Zig stable version.
 - 5s timeout by default.
-- if firejail is installed the consumption of networking is sandboxed.
+- if firejail is installed networking is sandboxed.
 - code snippets for sharing are stored using sqlite.
 
 ### Motivation
@@ -30,13 +30,13 @@ Related:
 ### Run locally with docker
 
 ```bash
-$ docker run --rm -p 8080:8080 dgvargas/play-zig
+docker run --rm -p 8080:8080 dgvargas/play-zig
 ```
 
 ### Run locally from the source
 ```bash
-$ git clone https://github.com/dgv/play.zig; cd play.zig
-$ zig build run
+git clone https://github.com/dgv/play.zig; cd play.zig
+zig build run
 ```
 
 ### Env vars
@@ -47,4 +47,4 @@ PORT port binding number (defult: 8080)
 AWS_ENDPOINT_URL_S3 endpoint of s3 to persist sqlite database (default: "")
 AWS_BUCKET_NAME_S3 bucket name of s3 to persist sqlite database (default: "play-zig")
 ```
-_Note: regarding s3 persistence credentials variables (AWS_ACCESS_KEY_ID, AWS_ENDPOINT_URL_S3, AWS_REGION) must be set to work properly._
+_Note: regarding s3 persistence credentials variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION and include project dir on LD_LIBRARY_PATH) must be set to work properly._
