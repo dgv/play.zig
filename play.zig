@@ -45,8 +45,8 @@ fn loadZiglings(alloc: std.mem.Allocator, zigling: []const u8) !void {
         }
         const html = try std.fmt.allocPrint(
             alloc,
-            "<option value=\"{s}\" {s}>{s}</option>",
-            .{ file.name, if (std.mem.eql(u8, file.name, zigling)) "selected" else "", file.name },
+            "<option value=\"{s}\"{s}>{s}</option>",
+            .{ file.name, if (std.mem.eql(u8, file.name, zigling)) " selected" else "", file.name },
         );
         try temp.append(html);
     }
@@ -68,22 +68,22 @@ pub fn main() !void {
     try initDb(s3endpoint, s3bucket);
     defer db.deinit();
     // server config
-    var server = try httpz.Server().init(gpa, .{
+    var server = try httpz.Server(void).init(gpa, .{
         .address = addr,
         .port = port,
         .request = .{
             .max_form_count = 2,
         },
-    });
+    }, {});
     // routes
-    var router = server.router();
-    router.get("/", edit);
-    router.get("/p/:snippet", edit);
-    router.get("/static/*", static);
-    router.post("/compile", run);
-    router.post("/fmt", run);
-    router.post("/share", share);
-    router.get("/metrics", metrics);
+    var router = try server.router(.{});
+    router.get("/", edit, .{});
+    router.get("/p/:snippet", edit, .{});
+    router.get("/static/*", static, .{});
+    router.post("/compile", run, .{});
+    router.post("/fmt", run, .{});
+    router.post("/share", share, .{});
+    router.get("/metrics", metrics, .{});
     // init server
     std.log.info("listening at {s}:{d}", .{ addr, port });
     try server.listen();
@@ -125,12 +125,11 @@ fn edit(req: *httpz.Request, res: *httpz.Response) !void {
     var d = zmpl.Data.init(res.arena);
     defer d.deinit();
     var root = try d.root(.object);
-
     try root.put("snippet", content);
     try root.put("ziglings", ziglings_list.items);
     if (zmpl.find("edit")) |template| {
-        const body = try template.render(&d);
-        res.body = body;
+        const body = try template.render(&d, null, null, .{ .layout = zmpl.find("edit") });
+        res.body = try res.arena.dupe(u8, body);
         res.content_type = .HTML;
     }
 }
@@ -196,7 +195,7 @@ fn share(req: *httpz.Request, res: *httpz.Response) !void {
     if (std.mem.eql(u8, get(req.arena, id) catch "", "")) {
         try put(id, code);
     }
-    res.body = id;
+    res.body = try res.arena.dupe(u8, id);
     res.content_type = .TEXT;
 }
 

@@ -1,35 +1,36 @@
 .{
-    .name = "play.zig",
-    .version = "0.1.0",
-    .minimum_zig_version = "0.13.0",
+    .name = .play_zig,
+    .version = "0.1.1",
+    .minimum_zig_version = "0.14.0",
+    .fingerprint = 0x1fefe04ebdc8e1b0,
     .dependencies = .{
         .s3db = .{
-            .url = "https://github.com/dgv/s3db.zig/archive/refs/heads/main.zip",
-            .hash = "122074c520f263c693aeab6e2a2e5c310be6c73bcc7aad7f95398faf14fedeab509c",
+            .url = "git+https://github.com/dgv/s3db.zig?ref=master#90abcede278f6a38757b499592d842a089f8b541",
+            .hash = "s3db-0.1.64-27KFb-YaAAArEBFBHsGRC_dUCNUPrklOOmdwOZF2V_Jg",
         },
         .httpz = .{
-            .url = "https://github.com/karlseguin/http.zig/archive/refs/heads/zig-0.13.zip",
-            .hash = "12208c1f2c5f730c4c03aabeb0632ade7e21914af03e6510311b449458198d0835d6",
+            .url = "git+https://github.com/karlseguin/http.zig?ref=master#56258131ef4505543fef5484451867c13c5ff322",
+            .hash = "httpz-0.0.0-PNVzrJSuBgDFvO7mtd2qDzaq8_hXIu1BqFuL1jwAV8Ac",
         },
         .zmpl = .{
-            .url = "https://github.com/jetzig-framework/zmpl/archive/refs/heads/zig-0.13.zip",
-            .hash = "1220d933e8ae4c77f51144f37068b9bde99a22f784fa17a4a4fb82e1bb05b3d5ac03",
+            .url = "git+https://github.com/jetzig-framework/zmpl?ref=master#3ec11289fdee2e0c70975cb5dd85d3041d723912",
+            .hash = "zmpl-0.0.1-SYFGBuZoAwAMuvHNkO_1BbutpWhg7CdSgYd8t4OaaZeR",
         },
         .zcmd = .{
-            .url = "https://github.com/dgv/zcmd.zig/archive/refs/heads/main.zip",
-            .hash = "12206d2cc4f892fb965fc7f383b0aad160da84008e107d45837eb2a9f1488f29043f",
+            .url = "git+https://github.com/dgv/zcmd.zig?ref=master#ae02dda501f907aa7a6c370d9f56efb8ef345cd8",
+            .hash = "zcmd-0.3.1-QsPp3xisAACS85V7K-deaql6BdLZrNHmrMbE_CBpSJ29",
         },
         .tmpfile = .{
-            .url = "https://github.com/dgv/tmpfile.zig/archive/refs/heads/master.zip",
-            .hash = "1220e06b43f1b50c5b354a279bfbb152fcca34990ec515f0c6039b988047f8e04339",
-        },
-        .@"zig-string" = .{
-            .url = "https://github.com/JakubSzark/zig-string/archive/refs/heads/master.zip",
-            .hash = "1220f5c17a0831fd955d885b409dafe1f972d2f25c6a98173cce6ca67a91c7971813",
+            .url = "git+https://github.com/dgv/tmpfile.zig?ref=master#559bd4945799fdfd7a01a98eac56c5a0d615d1a7",
+            .hash = "tmpfile-0.0.1-AAAAAGhUAADga0PxtQxbNUonm_uxUvzKNJkOxRXwxgOb",
         },
         .ziglyph = .{
-            .url = "https://codeberg.org/dude_the_builder/ziglyph/archive/v0.13.1.tar.gz",
-            .hash = "12207831bce7d4abce57b5a98e8f3635811cfefd160bca022eb91fe905d36a02cf25",
+            .url = "git+https://codeberg.org/dgv/ziglyph?ref=master#d9c23640b85b37eeea919d84efb892dbed6c3c8f",
+            .hash = "ziglyph-0.11.3-o3ARBKTuHwARGJBNZfNXfZsxxS1wCEbI745rgjYnyk4c",
+        },
+        .string = .{
+            .url = "git+https://github.com/dgv/zig-string?ref=master#494ac0e37c40b3c2fa685fb06fd913da7a59aa67",
+            .hash = "string-0.9.1-HwYWjIWVAAAJdD5KbXyWX6QAaKXxrxlX7yfrz8lJp27F",
         },
     },
     .paths = .{

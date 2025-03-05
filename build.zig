@@ -24,12 +24,13 @@ pub fn build(b: *std.Build) !void {
     }).module("s3db"));
     exe.root_module.addImport("tmpfile", b.dependency("tmpfile", .{}).module("tmpfile"));
     exe.root_module.addImport("zcmd", b.dependency("zcmd", .{}).module("zcmd"));
-    exe.root_module.addImport("string", b.dependency("zig-string", .{}).module("string"));
+    exe.root_module.addImport("string", b.dependency("string", .{}).module("string"));
     exe.root_module.addImport("ziglyph", b.dependency("ziglyph", .{}).module("ziglyph"));
     exe.root_module.addImport("zmpl", b.dependency("zmpl", .{
         .target = target,
         .optimize = optimize,
         .zmpl_templates_paths = templates_paths,
+        .sanitize = false,
     }).module("zmpl"));
     exe.root_module.addImport("httpz", b.dependency("httpz", .{
         .target = target,
