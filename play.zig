@@ -180,7 +180,7 @@ fn run(req: *httpz.Request, res: *httpz.Response) !void {
     if (isFmt) {
         try res.json(.{ .Error = parsed_err, .Body = f.stdout }, .{});
     } else {
-        try res.json(.{ .Errors = parsed_err, .Events = .{ .Message = f.stdout, .Kind = "stdout", .Delay = 0 }, .VetErrors = "" }, .{});
+        try res.json(.{ .Errors = parsed_err, .Events = .{.{ .Message = f.stdout, .Kind = "stdout", .Delay = 0 }}, .VetErrors = "" }, .{});
     }
 }
 

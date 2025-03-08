@@ -11,7 +11,7 @@ RUN ARCH=$(uname -m) &&\
     rm zig-linux-$ARCH-$ZIG_VERSION.tar.xz &&\
     mv zig-linux-$ARCH-$ZIG_VERSION zig &&\
     git clone https://github.com/ziglang/zig zig2 -b $ZIG_VERSION &&\
-    cd zig2; cc -o bootstrap bootstrap.c; ./bootstrap; mv zig2 ../zig/; cd $WORKDIR; rm -rf zig2/
+    cd zig2; sed -i "s/0.14.0-dev.bootstrap/${ZIG_VERSION}/g" bootstrap.c; cc -o bootstrap bootstrap.c; ./bootstrap; mv zig2 ../zig/; cd $WORKDIR; rm -rf zig2/
 ENV PATH="$WORKDIR/zig:$PATH"
 ENV TMPDIR="/tmp"
 ENV LD_LIBRARY_PATH=$WORKDIR
