@@ -12,13 +12,12 @@
     <script src="/static/playground.js"></script>
     <link rel="icon" href=/static/favicon.ico>
     <link rel="shortcut icon" href=/static/favicon.svg>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.24.0/codemirror.min.js" integrity="sha512-BmHROXH6Q9Dd/pW9Xbjthhz2fgLZ79RtjpqMfWM2ZXexZXJky3t3xTMtBkUY3ifhZrPozE6LwOyHVlfceBpzyw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.24.0/codemirror.min.css" integrity="sha512-HSTUwV7IgV9k3+iHfqu1Z8p4CI5Z+0P4ogvCO0X54FLbfRGPWnGDMqxQMSstyYDOw+J88h+Uw45/gb9BO6Tp4g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js" integrity="sha512-6cPYokihlrofMNApz7OXVQNObWjLiKGIBBb7+UB+AuMiRCLKmFKgrwms21sHq3bdFFZWpfHYRJBJvMFMPj1S9g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css" integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/mbo.min.css" integrity="sha512-od4iTUzGO7D57XePY29GbKmPNZTDtZcSSTFOLg9Bse/uA8dznrj2wP+GgB72zmoOj6M/M1rXBip5bT8jvbgMlg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/search/searchcursor.min.js" integrity="sha512-+ZfZDC9gi1y9Xoxi9UUsSp+5k+AcFE0TRNjI0pfaAHQ7VZTaaoEpBZp9q9OvHdSomOze/7s5w27rcsYpT6xU6g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js" integrity="sha512-GSYCbN/le5gNmfAWVEjg1tKnOH7ilK6xCLgA7c48IReoIR2g2vldxTM6kZlN6o3VtWIe6fHu/qhwxIt11J8EBA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="/static/codemirror/mode/zig/zig.js"></script>
-    <link rel="stylesheet" href="/static/codemirror/theme/mbo.css" />
-    <script src="/static/codemirror/addon/search/searchcursor.js"></script>
-    <script src="/static/codemirror/addon/edit/matchbrackets.js"></script>
-    <link rel="stylesheet" href="/static/codemirror/addon/dialog/dialog.css" />
     <script>
         $(document).ready(function () {
             code = CodeMirror.fromTextArea(document.getElementById("code"), {
