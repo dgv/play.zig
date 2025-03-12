@@ -171,11 +171,9 @@ fn run(req: *httpz.Request, res: *httpz.Response) !void {
             req.arena,
             f.stderr,
         );
-        _ = try temp_str.replace(".zig", "prog.zig");
+        _ = try temp_str.replace(f.tmpfile, "prog.zig");
         _ = try temp_str.replace("<stdin>", "prog.zig");
-        const idx = temp_str.find("prog.zig") orelse 0;
-        defer temp_str.deinit();
-        parsed_err = try req.arena.dupe(u8, temp_str.str()[idx..]);
+        parsed_err = temp_str.str();
     }
     if (isFmt) {
         try res.json(.{ .Error = parsed_err, .Body = f.stdout }, .{});
@@ -210,6 +208,7 @@ fn metrics(req: *httpz.Request, res: *httpz.Response) !void {
 }
 
 const output = struct {
+    tmpfile: []const u8,
     stdout: []const u8,
     stderr: []const u8,
 };
@@ -237,7 +236,7 @@ pub fn runFmt(alloc: std.mem.Allocator, code: []const u8) !output {
         defer error_bundle.deinit(alloc);
         try error_bundle.renderToWriter(color.renderOptions(), temp.writer());
     } else formatted = try tree.render(alloc);
-    return output{ .stdout = try alloc.dupe(u8, formatted), .stderr = try alloc.dupe(u8, temp.items) };
+    return output{ .tmpfile = try alloc.dupe(u8, tmp_file.abs_path), .stdout = try alloc.dupe(u8, formatted), .stderr = try alloc.dupe(u8, temp.items) };
 }
 
 pub fn runCompile(alloc: std.mem.Allocator, code: []const u8) !output {
@@ -268,7 +267,7 @@ pub fn runCompile(alloc: std.mem.Allocator, code: []const u8) !output {
         .commands = cmd,
     });
     defer result.deinit();
-    return output{ .stdout = try alloc.dupe(u8, result.trimedStdout()), .stderr = try alloc.dupe(u8, result.trimedStderr()) };
+    return output{ .tmpfile = try alloc.dupe(u8, tmp_file.abs_path), .stdout = try alloc.dupe(u8, result.trimedStdout()), .stderr = try alloc.dupe(u8, result.trimedStderr()) };
 }
 
 fn snippetId(body: []const u8) ![]const u8 {

@@ -96,7 +96,7 @@ pre,
     left: 0;
     right: 0;
     padding: 8px;
-    overflow: scroll;
+    overflow: auto;
 }
 
 #output .loading {

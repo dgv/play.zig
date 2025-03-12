@@ -167,7 +167,7 @@ function PlaygroundOutput(el) {
     if (!code || !error) {
       return;
     }
-    var errorRe = /[a-z0-9]+\.zig:([0-9]+):/g;
+    var errorRe = /prog.zig:([0-9]+):/g;
     var result;
     while ((result = errorRe.exec(error)) !== null) {
       var line = result[1] * 1 - 1;
