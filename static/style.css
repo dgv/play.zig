@@ -99,6 +99,15 @@ pre,
     overflow: auto;
 }
 
+#header-image {
+  background-image: url(/static/zig-logo-dark.svg);
+  background-repeat: no-repeat;
+  width: 128px;
+  height: 45px;
+  margin: 2px 0px 5px 10px;
+  float: left;
+}
+
 #output .loading {
     color: #999;
 }

@@ -83,7 +83,7 @@
 
 <body itemscope itemtype="http://schema.org/CreativeWork">
     <div id="banner">
-        <div id="head" itemprop="name"><a href="/">Zig Playground</a></div>
+        <a href="/"><span id="header-image"></span></a>
         <div id="controls">
             <input type="button" value="Run" id="run" />
             <input type="button" value="Format" id="fmt" />
