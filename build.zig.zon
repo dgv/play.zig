@@ -4,10 +4,6 @@
     .minimum_zig_version = "0.14.0",
     .fingerprint = 0x1fefe04ebdc8e1b0,
     .dependencies = .{
-        .s3db = .{
-            .url = "git+https://github.com/dgv/s3db.zig?ref=master#90abcede278f6a38757b499592d842a089f8b541",
-            .hash = "s3db-0.1.64-27KFb-YaAAArEBFBHsGRC_dUCNUPrklOOmdwOZF2V_Jg",
-        },
         .httpz = .{
             .url = "git+https://github.com/karlseguin/http.zig?ref=master#56258131ef4505543fef5484451867c13c5ff322",
             .hash = "httpz-0.0.0-PNVzrJSuBgDFvO7mtd2qDzaq8_hXIu1BqFuL1jwAV8Ac",
@@ -31,6 +27,10 @@
         .string = .{
             .url = "git+https://github.com/dgv/zig-string?ref=master#494ac0e37c40b3c2fa685fb06fd913da7a59aa67",
             .hash = "string-0.9.1-HwYWjIWVAAAJdD5KbXyWX6QAaKXxrxlX7yfrz8lJp27F",
+        },
+        .s3db = .{
+            .url = "git+https://github.com/dgv/s3db.zig?ref=master#6f48480695288a485d0af26624e5f04abf7bcb22",
+            .hash = "s3db-0.1.65-27KFb-YaAAAgd0F8pJ3yJtRe058EaDbWY4EkJt6iUT2E",
         },
     },
     .paths = .{

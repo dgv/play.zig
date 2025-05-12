@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <title>Zig Playground</title>
     <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/light.css" />
     <script
       src="https://code.jquery.com/jquery-2.2.4.min.js"
       integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
@@ -21,7 +22,7 @@
     <script>
         $(document).ready(function () {
             code = CodeMirror.fromTextArea(document.getElementById("code"), {
-                theme: "mbo",
+                theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "mbo" : "light",
                 matchBrackets: true,
                 indentUnit: 4,
                 tabSize: 4,
@@ -30,6 +31,9 @@
                 mode: "text/x-zig",
                 lineNumbers: true,
                 showCursorWhenSelecting: true,
+            });
+            window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
+                code.setOption("theme", event.matches ? "mbo" : "light"); 
             });
             $code = $(code.getWrapperElement()).attr("id", "code");
             code.refresh();
